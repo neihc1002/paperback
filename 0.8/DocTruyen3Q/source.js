@@ -609,18 +609,18 @@ class DocTruyen3Q {
                 case 'featured':
                     section.items = this.parser.parseFeaturedSection($);
                     break;
-                case 'viewest':
-                    section.items = this.parser.parseSearchResults($);
-                    break;
-                case 'hot':
-                    section.items = this.parser.parseHomeTemplate($, '#hot');
-                    break;
-                case 'new_updated':
-                    section.items = this.parser.parseHomeTemplate($, '#home');
-                    break;
-                case 'full':
-                    section.items = this.parser.parseSearchResults($);
-                    break;
+                // case 'viewest':
+                //     section.items = this.parser.parseSearchResults($);
+                //     break;
+                // case 'hot':
+                //     section.items = this.parser.parseHomeTemplate($, '#hot');
+                //     break;
+                // case 'new_updated':
+                //     section.items = this.parser.parseHomeTemplate($, '#home');
+                //     break;
+                // case 'full':
+                //     section.items = this.parser.parseSearchResults($);
+                //     break;
             }
             sectionCallback(section);
         }
@@ -786,11 +786,11 @@ class Parser {
     }
     parseFeaturedSection($) {
         const featuredItems = [];
-        $('.owl-carousel .slide-item').each((_, obj) => {
-            const title = $('.slide-info > h3 > a', obj).text().trim();
+        $('#ctl00_divAlt1 .owl-carousel .owl-item').each((_, obj) => {
+            const title = $('.slide-caption > h3 > a', obj).text().trim();
             let image = $('a > img', obj).attr('src') ?? $('a > img', obj).attr('data-src');
             image = !image ? "https://i.imgur.com/GYUxEX8.png" : image;
-            const mangaId = String($('.slide-info > h3 > a', obj).attr('href')?.split('/').slice(4).join('/'));
+            const mangaId = String($('.slide-caption > h3 > a', obj).attr('href')?.split('/').slice(4).join('/'));
             const subtitle = $('.detail-slide > a', obj).text().trim();
             if (!mangaId || !title)
                 return;
@@ -826,14 +826,14 @@ class Parser {
         switch (homepageSectionId) {
             case 'featured':
                 return this.parseFeaturedSection($);
-            case 'viewest':
-                return this.parseSearchResults($);
-            case 'hot':
-                return this.parseHomeTemplate($, '#hot');
-            case 'new_updated':
-                return this.parseHomeTemplate($, '#home');
-            case 'full':
-                return this.parseSearchResults($);
+            // case 'viewest':
+            //     return this.parseSearchResults($);
+            // case 'hot':
+            //     return this.parseHomeTemplate($, '#hot');
+            // case 'new_updated':
+            //     return this.parseHomeTemplate($, '#home');
+            // case 'full':
+            //     return this.parseSearchResults($);
             default:
                 throw new Error(`Invalid homepageSectionId: ${homepageSectionId}`);
         }
