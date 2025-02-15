@@ -463,7 +463,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocTruyen3Q = exports.DocTruyen3QInfo = exports.isLastPage = void 0;
 const types_1 = require("@paperback/types");
 const DocTruyen3QParser_1 = require("./DocTruyen3QParser");
-const DOMAIN = 'https://doctruyen3qne.com/';
+const DOMAIN = 'https://nettruyenrr.com/';
 const isLastPage = ($) => {
     const lastPage = Number($("ul.pagination > li.page-item:not(:has(a[rel='next'])) a").last().text().trim());
     const currentPage = Number($("ul.pagination > li.active").text().trim());
@@ -474,8 +474,8 @@ exports.DocTruyen3QInfo = {
     version: '1.0.1',
     name: 'DocTruyen3Q',
     icon: 'icon.png',
-    author: 'JustaTama',
-    authorWebsite: 'https://github.com/JustaTama',
+    author: 'neihc1002',
+    authorWebsite: 'https://github.com/neihc1002',
     description: 'Extension that pulls manga from DocTruyen3Q',
     contentRating: types_1.ContentRating.MATURE,
     websiteBaseURL: DOMAIN,
