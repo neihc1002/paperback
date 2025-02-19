@@ -481,7 +481,7 @@ exports.NetTruyenHeInfo = {
     ],
     intents: types_1.SourceIntents.MANGA_CHAPTERS |
         types_1.SourceIntents.HOMEPAGE_SECTIONS |
-        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
+        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
 };
 const isLastPage = ($) => {
     return $(".page_redirect a:contains('›')").length > 0;
@@ -614,9 +614,9 @@ class NetTruyenHe {
         const sections = [
             App.createHomeSection({
                 id: "featured",
-                title: "TRUYỆN ĐỀ CỬ",
-                containsMoreItems: false,
-                type: types_1.HomeSectionType.singleRowLarge,
+                title: "TRUYỆN HOT",
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
             }),
             App.createHomeSection({
                 id: "full",
@@ -625,14 +625,18 @@ class NetTruyenHe {
                 type: types_1.HomeSectionType.singleRowNormal,
             }),
         ];
-        const $ = await this.DOMHTML(DOMAIN);
+        let $;
         for (const section of sections) {
             switch (section.id) {
                 case "featured":
-                    section.items = this.parser.parseFeaturedSection($, DOMAIN);
+                    $ = await this.DOMHTML(`${DOMAIN}truyen-tranh-hot`);
+                    section.items = this.parser
+                        .parseNewUpdatedSection($, DOMAIN)
+                        .slice(0, 5);
                     break;
                 case "full":
-                    section.items = this.parser.parseNewUpdatedSection($, DOMAIN);
+                    $ = await this.DOMHTML(`${DOMAIN}`);
+                    section.items = this.parser.parseNewUpdatedSection($, DOMAIN).slice(0.5);
                     break;
             }
             sectionCallback(section);
@@ -646,6 +650,10 @@ class NetTruyenHe {
         switch (homepageSectionId) {
             case "full":
                 url = `${DOMAIN}`;
+                param = `?page=${page}`;
+                break;
+            case "featured":
+                url = `${DOMAIN}truyen-tranh-hot`;
                 param = `?page=${page}`;
                 break;
             default:
@@ -782,7 +790,7 @@ class Parser {
             mangaInfo: App.createMangaInfo({
                 titles,
                 image: fullImage,
-                desc: '',
+                desc: "",
                 status,
                 tags: [App.createTagSection({ id: "0", label: "genres", tags: tags })],
                 rating,
@@ -821,6 +829,7 @@ class Parser {
     parseViewMoreItems($, homepageSectionId, domain = "") {
         switch (homepageSectionId) {
             case "full":
+            case "featured":
                 return this.parseNewUpdatedSection($, domain);
             // case "full":
             //   return this.parseSearchResults($);

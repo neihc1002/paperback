@@ -573,9 +573,9 @@ class TruyenQQ {
         const sections = [
             App.createHomeSection({
                 id: "featured",
-                title: "TRUYỆN HAY",
-                containsMoreItems: false,
-                type: types_1.HomeSectionType.singleRowLarge,
+                title: "TRUYỆN PHỔ BIẾN",
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
             }),
             App.createHomeSection({
                 id: "new_updated",
@@ -584,14 +584,16 @@ class TruyenQQ {
                 type: types_1.HomeSectionType.singleRowNormal,
             }),
         ];
-        const $ = await this.DOMHTML(DOMAIN);
+        let $;
         for (const section of sections) {
             switch (section.id) {
                 case "featured":
-                    section.items = this.parser.parseFeaturedSection($);
+                    $ = await this.DOMHTML(`${DOMAIN}truyen-yeu-thich`);
+                    section.items = this.parser.parseNewUpdatedSection($).slice(0, 5);
                     break;
                 case "new_updated":
-                    section.items = this.parser.parseNewUpdatedSection($);
+                    $ = await this.DOMHTML(`${DOMAIN}`);
+                    section.items = this.parser.parseNewUpdatedSection($).slice(0, 5);
                     break;
             }
             sectionCallback(section);
@@ -607,9 +609,8 @@ class TruyenQQ {
                 url = `${DOMAIN}tim-truyen`;
                 param = `?sort=2&page=${page}`;
                 break;
-            case "hot":
-                url = `${DOMAIN}hot`;
-                param = `?page=${page}`;
+            case "featured":
+                url = `${DOMAIN}truyen-yeu-thich/trang-${page}.html`;
                 break;
             case "new_updated":
                 url = `${DOMAIN}truyen-moi-cap-nhat/trang-${page}.html`;
@@ -623,7 +624,7 @@ class TruyenQQ {
         }
         const $ = await this.DOMHTML(`${url}${encodeURI(param)}`);
         let manga = this.parser.parseViewMoreItems($, homepageSectionId);
-        metadata = (0, exports.isLastPage)($) ? undefined : { page: page + 1 };
+        metadata = { page: page + 1 };
         return App.createPagedResults({
             results: manga,
             metadata,
@@ -779,6 +780,7 @@ class Parser {
     parseViewMoreItems($, homepageSectionId) {
         switch (homepageSectionId) {
             case "new_updated":
+            case "featured":
                 return this.parseNewUpdatedSection($);
             // case "full":
             //   return this.parseSearchResults($);

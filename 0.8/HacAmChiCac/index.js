@@ -460,17 +460,17 @@ __exportStar(require("./compat/DyamicUI"), exports);
 },{"./base/index":7,"./compat/DyamicUI":16,"./generated/_exports":60}],62:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NetTruyenHe = exports.isLastPage = exports.NetTruyenHeInfo = void 0;
+exports.HacAmChiCac = exports.HacAmChiCacInfo = void 0;
 const types_1 = require("@paperback/types");
-const NetTruyenHeParser_1 = require("./NetTruyenHeParser");
-const DOMAIN = "https://nettruyenvie.com/";
-exports.NetTruyenHeInfo = {
+const HacAmChiCacParser_1 = require("./HacAmChiCacParser");
+const DOMAIN = "https://hacamchicac.com/";
+exports.HacAmChiCacInfo = {
     version: "1.0.0",
-    name: "NetTruyenVie",
+    name: "HacAmChiCac",
     icon: "icon.png",
     author: "neihc1002",
     authorWebsite: "https://github.com/neich1002",
-    description: "Extension that pulls manga from NetTruyenVie",
+    description: "Extension that pulls manga from HacAmChiCac",
     contentRating: types_1.ContentRating.MATURE,
     websiteBaseURL: DOMAIN,
     sourceTags: [
@@ -483,14 +483,10 @@ exports.NetTruyenHeInfo = {
         types_1.SourceIntents.HOMEPAGE_SECTIONS |
         types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
 };
-const isLastPage = ($) => {
-    return $(".page_redirect a:contains('›')").length > 0;
-};
-exports.isLastPage = isLastPage;
-class NetTruyenHe {
+class HacAmChiCac {
     constructor(cheerio) {
         this.cheerio = cheerio;
-        this.parser = new NetTruyenHeParser_1.Parser();
+        this.parser = new HacAmChiCacParser_1.Parser();
         this.stateManager = App.createSourceStateManager();
         this.requestManager = App.createRequestManager({
             requestsPerSecond: 4,
@@ -548,29 +544,22 @@ class NetTruyenHe {
         return { stringPart, numberPart };
     }
     async getMangaDetails(mangaId) {
-        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh/${mangaId}`);
-        return this.parser.parseMangaDetails($, mangaId, DOMAIN);
+        const $ = await this.DOMHTML(`${DOMAIN}${mangaId}`);
+        return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const data = await this.getDataApi(`${DOMAIN}Comic/Services/ComicService.asmx/ChapterList?slug=${mangaId}`);
-        if (!data) {
-            throw new Error("Failed to fetch data from API");
-        }
-        const dataJson = JSON.parse(data);
-        const chapters = dataJson["data"].map((chapter) => {
-            return App.createChapter({
-                id: `${mangaId}/${chapter.chapter_slug}`,
-                chapNum: chapter.chapter_num,
-                name: chapter.chapter_name,
-                langCode: "🇻🇳",
-                time: new Date(chapter.reported_at.replace(" ", "T")),
-            });
+        const $ = await this.DOMHTML(`${DOMAIN}${mangaId}`);
+        const chapter = App.createChapter({
+            id: mangaId,
+            chapNum: 1,
+            name: mangaId,
+            langCode: "🇻🇳",
         });
-        return chapters;
+        return [chapter];
     }
     async getChapterDetails(mangaId, chapterId) {
-        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh/${chapterId}`);
-        const pages = this.parser.parseChapterDetails($, DOMAIN);
+        const $ = await this.DOMHTML(`${DOMAIN}${chapterId}`);
+        const pages = this.parser.parseChapterDetails($);
         return App.createChapterDetails({
             id: chapterId,
             mangaId: mangaId,
@@ -579,32 +568,13 @@ class NetTruyenHe {
     }
     async getSearchResults(query, metadata) {
         let page = metadata?.page ?? 1;
-        // const search = {
-        //   cate: "",
-        //   status: "2",
-        //   sort: "1",
-        // };
-        // const tags = query.includedTags?.map(tag => tag.id) ?? [];
-        // for (const value of tags) {
-        //     const [key, val] = value.split('.');
-        //     switch (key) {
-        //         case 'cate':
-        //             search.cate = String(val);
-        //             break;
-        //         case 'status':
-        //             search.status = String(val);
-        //             break;
-        //         case 'sort':
-        //             search.sort = String(val);
-        //             break;
-        //     }
-        // }
-        const url = `${DOMAIN}tim-truyen`;
-        const search_query = !query.title ? "?" : `?keyword=${query.title}`;
-        const param = `${search_query}&page=${page}`;
+        const url = `${DOMAIN}page/${page}`;
+        const search_query = !query.title ? "" : `?s=${query.title}`;
+        const param = `${search_query}`;
         const $ = await this.DOMHTML(`${url}${encodeURI(param)}`);
         const tiles = this.parser.parseNewUpdatedSection($);
-        metadata = (0, exports.isLastPage)($) ? undefined : { page: page + 1 };
+        //throw new Error(tiles.length.toString())
+        metadata = { page: page + 1 };
         return App.createPagedResults({
             results: tiles,
             metadata,
@@ -618,26 +588,26 @@ class NetTruyenHe {
                 containsMoreItems: true,
                 type: types_1.HomeSectionType.singleRowNormal,
             }),
-            App.createHomeSection({
-                id: "full",
-                title: "TRUYỆN MỚI CẬP NHẬT",
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-            }),
+            //   App.createHomeSection({
+            //     id: "full",
+            //     title: "TRUYỆN MỚI CẬP NHẬT",
+            //     containsMoreItems: true,
+            //     type: HomeSectionType.singleRowNormal,
+            //   }),
         ];
-        let $;
         for (const section of sections) {
             switch (section.id) {
                 case "featured":
-                    $ = await this.DOMHTML(`${DOMAIN}truyen-tranh-hot`);
-                    section.items = this.parser
-                        .parseNewUpdatedSection($, DOMAIN)
-                        .slice(0, 5);
+                    // $ = await this.DOMHTML(`${DOMAIN}truyen-tranh-hot`);
+                    //   section.items = this.parser
+                    //     .parseNewUpdatedSection($, DOMAIN)
+                    //     .slice(0, 5);
+                    section.items = [];
                     break;
-                case "full":
-                    $ = await this.DOMHTML(`${DOMAIN}`);
-                    section.items = this.parser.parseNewUpdatedSection($, DOMAIN).slice(0.5);
-                    break;
+                // case "full":
+                //   $ = await this.DOMHTML(`${DOMAIN}`);
+                //   section.items = this.parser.parseNewUpdatedSection($, DOMAIN).slice(0.5);
+                //   break;
             }
             sectionCallback(section);
         }
@@ -661,7 +631,7 @@ class NetTruyenHe {
         }
         const $ = await this.DOMHTML(`${url}${encodeURI(param)}`);
         let manga = this.parser.parseViewMoreItems($, homepageSectionId, DOMAIN);
-        metadata = (0, exports.isLastPage)($) ? undefined : { page: page + 1 };
+        metadata = { page: page + 1 };
         return App.createPagedResults({
             results: manga,
             metadata,
@@ -671,9 +641,9 @@ class NetTruyenHe {
         return `${DOMAIN}truyen-tranh/${mangaId}`;
     }
 }
-exports.NetTruyenHe = NetTruyenHe;
+exports.HacAmChiCac = HacAmChiCac;
 
-},{"./NetTruyenHeParser":63,"@paperback/types":61}],63:[function(require,module,exports){
+},{"./HacAmChiCacParser":63,"@paperback/types":61}],63:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
@@ -744,58 +714,49 @@ class Parser {
         });
         return featuredItems;
     }
-    parseNewUpdatedSection($, domain = "") {
+    parseNewUpdatedSection($) {
         const featuredItems = [];
-        $("div#ctl00_divCenter div.item figure").each((_, manga) => {
-            const title = $("figcaption > h3 > a", manga).text();
-            const id = $(".image a", manga).attr("href")?.split("/").pop();
-            const image = $(".image > a > img.image-thumb", manga).attr("data-original");
-            const fullImage = this.fullImageLink(image ?? "", domain);
-            // const subtitle =
-            //   $(".slide-caption > a", manga).text().trim() +
-            //   " - " +
-            //   $(".slide-caption > .time", manga).text().trim();
+        $(".archive-grid-post").each((_, manga) => {
+            const title = $(".aft-post-image-link", manga).text();
+            const url = $(".aft-post-image-link", manga).attr("href") || "";
+            const parts = url.split("/");
+            const id = parts[parts.length - 2];
+            const image = $(".read-img > img", manga).attr("src");
             if (!id || !title)
                 return;
             featuredItems.push(App.createPartialSourceManga({
                 mangaId: String(id),
-                image: fullImage,
+                image: String(image),
                 title: title,
             }));
         });
         return featuredItems;
     }
-    parseChapterDetails($, domain) {
+    parseChapterDetails($) {
         const pages = [];
-        $("div.reading-detail > div.page-chapter > img").each((_, obj) => {
+        $(".inner-entry-content img").each((_, obj) => {
             if (!obj.attribs["data-src"])
                 return;
             const link = obj.attribs["data-src"];
-            const fullLink = this.fullImageLink(link, domain);
-            pages.push(fullLink);
+            pages.push(link);
         });
         return pages;
     }
-    parseMangaDetails($, mangaId, domain = "") {
-        const tags = [];
-        const titles = [$("h1.title-detail").text().trim()];
-        const author = $("ul.list-info > li.author > p.col-xs-8").text();
-        const artist = $("ul.list-info > li.author > p.col-xs-8").text();
-        const image = $(".detail-info .col-image > img").attr("src");
-        const status = $("ul.list-info > li.status > p.col-xs-8").text();
-        const rating = parseFloat($('span[itemprop="ratingValue"]').text());
-        const fullImage = this.fullImageLink(image ?? "", domain);
+    parseMangaDetails($, mangaId) {
+        const titles = [$(".entry-title").text().trim()];
+        // const author = $("ul.list-info > li.author > p.col-xs-8").text();
+        // const artist = $("ul.list-info > li.author > p.col-xs-8").text();
+        // const image = $(".detail-info .col-image > img").attr("src");
+        // const status = $("ul.list-info > li.status > p.col-xs-8").text();
+        // const rating = parseFloat($('span[itemprop="ratingValue"]').text());
+        // const fullImage = this.fullImageLink(image ?? "", domain);
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
                 titles,
-                image: fullImage,
+                image: "",
                 desc: "",
-                status,
-                tags: [App.createTagSection({ id: "0", label: "genres", tags: tags })],
-                rating,
-                author,
-                artist,
+                status: "",
             }),
         });
     }
