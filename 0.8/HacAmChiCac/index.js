@@ -559,7 +559,7 @@ class HacAmChiCac {
     }
     async getChapterDetails(mangaId, chapterId) {
         const $ = await this.DOMHTML(`${DOMAIN}${chapterId}`);
-        const pages = this.parser.parseChapterDetails($);
+        const pages = this.parser.parseChapterDetails($, DOMAIN);
         return App.createChapterDetails({
             id: chapterId,
             mangaId: mangaId,
@@ -732,13 +732,18 @@ class Parser {
         });
         return featuredItems;
     }
-    parseChapterDetails($) {
+    parseChapterDetails($, domain) {
         const pages = [];
         $(".inner-entry-content img").each((_, obj) => {
             if (!obj.attribs["data-src"])
                 return;
-            const link = obj.attribs["data-src"];
-            pages.push(link);
+            let link = obj.attribs["data-src"];
+            let full = link;
+            if (!link.includes(domain)) {
+                full = domain + link.replace(/^\/+/, "");
+            }
+            // Nếu không có, thêm domain vào
+            pages.push(`${link}`);
         });
         return pages;
     }
