@@ -481,7 +481,7 @@ exports.NetTruyenHeInfo = {
     ],
     intents: types_1.SourceIntents.MANGA_CHAPTERS |
         types_1.SourceIntents.HOMEPAGE_SECTIONS |
-        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
+        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 const isLastPage = ($) => {
     return $(".page_redirect a:contains('›')").length > 0;
@@ -599,16 +599,27 @@ class NetTruyenHe {
         //             break;
         //     }
         // }
-        const url = `${DOMAIN}tim-truyen`;
-        const search_query = !query.title ? "?" : `?keyword=${query.title}`;
-        const param = `${search_query}&page=${page}`;
-        const $ = await this.DOMHTML(`${url}${encodeURI(param)}`);
-        const tiles = this.parser.parseNewUpdatedSection($);
-        metadata = (0, exports.isLastPage)($) ? undefined : { page: page + 1 };
+        // const url = `${DOMAIN}tim-truyen`;
+        // const search_query = !query.title ? "?" : `?keyword=${query.title}`;
+        // const param = `${search_query}&page=${page}`;
+        // const $ = await this.DOMHTML(`${url}${encodeURI(param)}`);
+        const tiles = await this.getTiles({
+            keyword: query.title,
+            page: page,
+        });
+        metadata = { page: page + 1 };
         return App.createPagedResults({
             results: tiles,
             metadata,
         });
+    }
+    async getTiles(queries) {
+        const url = `${DOMAIN}tim-truyen?${Object.entries(queries)
+            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+            .join("&")}`;
+        const $ = await this.DOMHTML(url);
+        const tiles = this.parser.parseNewUpdatedSection($);
+        return tiles;
     }
     async getHomePageSections(sectionCallback) {
         const sections = [
@@ -624,24 +635,63 @@ class NetTruyenHe {
                 containsMoreItems: true,
                 type: types_1.HomeSectionType.singleRowNormal,
             }),
+            App.createHomeSection({
+                id: "top-day",
+                title: "Top ngày",
+                containsMoreItems: false,
+                type: types_1.HomeSectionType.singleRowNormal,
+            }),
+            App.createHomeSection({
+                id: "top-week",
+                title: "Top tuần",
+                containsMoreItems: false,
+                type: types_1.HomeSectionType.singleRowNormal,
+            }),
         ];
-        let $;
-        for (const section of sections) {
-            switch (section.id) {
-                case "featured":
-                    $ = await this.DOMHTML(`${DOMAIN}truyen-tranh-hot`);
-                    section.items = this.parser
-                        .parseNewUpdatedSection($, DOMAIN)
-                        .slice(0, 5);
-                    break;
-                case "full":
-                    $ = await this.DOMHTML(`${DOMAIN}`);
-                    section.items = this.parser.parseNewUpdatedSection($, DOMAIN).slice(0.5);
-                    break;
-            }
-            sectionCallback(section);
+        try {
+            const promises = sections.map(async (section) => {
+                let items = [];
+                switch (section.id) {
+                    case "featured": {
+                        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh-hot`);
+                        items = this.parser
+                            .parseNewUpdatedSection($, DOMAIN)
+                            .slice(0, 5);
+                        break;
+                    }
+                    case "full": {
+                        const $ = await this.DOMHTML(DOMAIN);
+                        items = this.parser
+                            .parseNewUpdatedSection($, DOMAIN)
+                            .slice(0, 10); // Fixed from 0.5
+                        break;
+                    }
+                    case "top-day": {
+                        items = await this.getTiles({
+                            page: 1,
+                            sort: 11,
+                        });
+                        break;
+                    }
+                    case "top-week": {
+                        items = await this.getTiles({
+                            page: 1,
+                            sort: 12,
+                        });
+                        break;
+                    }
+                }
+                section.items = items;
+                if (items.length > 0) {
+                    sectionCallback(section);
+                }
+            });
+            await Promise.all(promises);
         }
-        //throw new Error("No items found");
+        catch (error) {
+            console.error(`Failed to get home page sections: ${error}`);
+            throw new Error(`Failed to get home page sections: ${error}`);
+        }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         let page = metadata?.page ?? 1;
